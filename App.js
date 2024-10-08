@@ -5,108 +5,205 @@
  * @format
  * @flow strict-local
  */
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, TextInput, Button } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Picker } from '@react-native-picker/picker';
+const Stack = createNativeStackNavigator();
 
-import React from 'react';
-import type {Node} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+function HomeScreen({ navigation, route }) {
+  const [menu, setMenu] = useState(route.params?.menu || []);
+  const totalDishes = menu.length;
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Welcome to Christoffel's Menu</Text>
+      <Text style={styles.subtitle}>Total Dishes: {totalDishes}</Text>
+
+      <FlatList
+        data={menu}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => navigation.navigate('DishDetails', { dish: item })}
+          >
+            <Text style={styles.itemText}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      <Button
+        title="Add New Dish"
+        color="#000"
+        onPress={() => navigation.navigate('AddDish', { menu, setMenu })}
+      />
     </View>
   );
-};
+}
 
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+function DishDetailsScreen({ route }) {
+  const { dish } = route.params;
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>{dish.name}</Text>
+      <Text style={styles.subtitle}>Description: {dish.description}</Text>
+      <Text style={styles.subtitle}>Course: {dish.course}</Text>
+      <Text style={styles.subtitle}>Price: {dish.price}</Text>
+    </View>
+  );
+}
+
+function AddDishScreen({ route, navigation }) {
+  const { menu, setMenu } = route.params;
+  const [dishName, setDishName] = useState('');
+  const [description, setDescription] = useState('');
+  const [course, setCourse] = useState('Starter');
+  const [price, setPrice] = useState('');
+
+  const predefinedCourses = ['Starter', 'Main', 'Dessert'];
+
+  const addItem = () => {
+    const newDish = {
+      id: (menu.length + 1).toString(),
+      name: dishName,
+      description,
+      course,
+      price: `R${price}`,
+    };
+    setMenu([...menu, newDish]);
+    navigation.navigate('Home', { menu: [...menu, newDish] });
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Add New Menu Item</Text>
+
+      <Text style={styles.label}>Dish Name:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Dish Name"
+        placeholderTextColor="#bbb"
+        value={dishName}
+        onChangeText={setDishName}
+      />
+
+      <Text style={styles.label}>Description:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Description"
+        placeholderTextColor="#bbb"
+        value={description}
+        onChangeText={setDescription}
+      />
+
+      <Text style={styles.label}>Course:</Text>
+      <Picker
+        selectedValue={course}
+        style={styles.input}
+        onValueChange={(itemValue) => setCourse(itemValue)}
+      >
+        {predefinedCourses.map((course) => (
+          <Picker.Item key={course} label={course} value={course} />
+        ))}
+      </Picker>
+
+      <Text style={styles.label}>Price (in Rands):</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Price"
+        placeholderTextColor="#bbb"
+        keyboardType="numeric"
+        value={price}
+        onChangeText={setPrice}
+      />
+
+      <Button color="#000" title="Add Item" onPress={addItem} />
+    </View>
   );
-};
+}
+
+export default function App() {
+  const initialMenu = [
+    { id: '1', name: 'Starter 1', description: 'Delicious Starter 1', course: 'Starter', price: 'R100' },
+    { id: '2', name: 'Main 1', description: 'Hearty Main Course 1', course: 'Main', price: 'R200' },
+    { id: '3', name: 'Dessert 1', description: 'Sweet Dessert 1', course: 'Dessert', price: 'R80' },
+    { id: '4', name: 'Starter 2', description: 'Delicious Starter 2', course: 'Starter', price: 'R110' },
+    { id: '5', name: 'Main 2', description: 'Hearty Main Course 2', course: 'Main', price: 'R250' },
+    { id: '6', name: 'Dessert 2', description: 'Sweet Dessert 2', course: 'Dessert', price: 'R90' },
+    { id: '7', name: 'Starter 3', description: 'Delicious Starter 3', course: 'Starter', price: 'R120' },
+    { id: '8', name: 'Main 3', description: 'Hearty Main Course 3', course: 'Main', price: 'R300' },
+    { id: '9', name: 'Dessert 3', description: 'Sweet Dessert 3', course: 'Dessert', price: 'R100' },
+    { id: '10', name: 'Starter 4', description: 'Delicious Starter 4', course: 'Starter', price: 'R130' },
+  ];
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          initialParams={{ menu: initialMenu }}
+          options={{ title: 'Home' }}
+        />
+        <Stack.Screen
+          name="DishDetails"
+          component={DishDetailsScreen}
+          options={({ route }) => ({ title: route.params.dish.name })}
+        />
+        <Stack.Screen
+          name="AddDish"
+          component={AddDishScreen}
+          options={{ title: 'Add New Dish' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    backgroundColor: '#333',
+    padding: 20,
   },
-  sectionTitle: {
+  title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  sectionDescription: {
-    marginTop: 8,
+  subtitle: {
     fontSize: 18,
-    fontWeight: '400',
+    color: '#fff',
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  highlight: {
-    fontWeight: '700',
+  label: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#555',
+    backgroundColor: '#555',
+    padding: 10,
+    color: '#fff',
+    marginBottom: 10,
+  },
+  item: {
+    padding: 15,
+    backgroundColor: '#555',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  itemText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
-
-export default App;
