@@ -1,28 +1,47 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, TextInput, Button } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, TextInput, Button, Picker } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Picker } from '@react-native-picker/picker';
+
 const Stack = createNativeStackNavigator();
 
 function HomeScreen({ navigation, route }) {
   const [menu, setMenu] = useState(route.params?.menu || []);
-  const totalDishes = menu.length;
+  const [selectedCourse, setSelectedCourse] = useState('All');
+  
+  // Calculate the average price of the dishes
+  const calculateAveragePrice = () => {
+    const total = menu.reduce((sum, item) => sum + parseFloat(item.price.replace('R', '')), 0);
+    return (total / menu.length).toFixed(2);
+  };
+
+  const filterMenu = (course) => {
+    if (course === 'All') return menu;
+    return menu.filter(dish => dish.course === course);
+  };
+
+  const filteredMenu = filterMenu(selectedCourse);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Christoffel's Menu</Text>
-      <Text style={styles.subtitle}>Total Dishes: {totalDishes}</Text>
+      <Text style={styles.subtitle}>Average Price: R{calculateAveragePrice()}</Text>
+      <Text style={styles.subtitle}>Total Dishes: {menu.length}</Text>
+
+      <Text style={styles.label}>Filter by Course:</Text>
+      <Picker
+        selectedValue={selectedCourse}
+        style={styles.input}
+        onValueChange={(itemValue) => setSelectedCourse(itemValue)}
+      >
+        <Picker.Item label="All" value="All" />
+        <Picker.Item label="Starter" value="Starter" />
+        <Picker.Item label="Main" value="Main" />
+        <Picker.Item label="Dessert" value="Dessert" />
+      </Picker>
 
       <FlatList
-        data={menu}
+        data={filteredMenu}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -66,15 +85,25 @@ function AddDishScreen({ route, navigation }) {
   const predefinedCourses = ['Starter', 'Main', 'Dessert'];
 
   const addItem = () => {
-    const newDish = {
-      id: (menu.length + 1).toString(),
-      name: dishName,
-      description,
-      course,
-      price: `R${price}`,
-    };
-    setMenu([...menu, newDish]);
-    navigation.navigate('Home', { menu: [...menu, newDish] });
+    if (dishName.trim() && description.trim() && price.trim()) {
+      const newDish = {
+        id: (menu.length + 1).toString(),
+        name: dishName,
+        description,
+        course,
+        price: `R${price}`,
+      };
+      setMenu([...menu, newDish]);
+      navigation.navigate('Home', { menu: [...menu, newDish] });
+    } else {
+      alert('Please fill in all fields.');
+    }
+  };
+
+  const removeItem = (id) => {
+    const updatedMenu = menu.filter(item => item.id !== id);
+    setMenu(updatedMenu);
+    navigation.navigate('Home', { menu: updatedMenu });
   };
 
   return (
@@ -121,6 +150,21 @@ function AddDishScreen({ route, navigation }) {
       />
 
       <Button color="#000" title="Add Item" onPress={addItem} />
+
+      <FlatList
+        data={menu}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text style={styles.itemText}>{item.name}</Text>
+            <Button
+              title="Remove"
+              color="#ff0000"
+              onPress={() => removeItem(item.id)}
+            />
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -128,15 +172,11 @@ function AddDishScreen({ route, navigation }) {
 export default function App() {
   const initialMenu = [
     { id: '1', name: 'Starter 1', description: 'Delicious Starter 1', course: 'Starter', price: 'R100' },
-    { id: '2', name: 'Main 1', description: 'Hearty Main Course 1', course: 'Main', price: 'R200' },
-    { id: '3', name: 'Dessert 1', description: 'Sweet Dessert 1', course: 'Dessert', price: 'R80' },
-    { id: '4', name: 'Starter 2', description: 'Delicious Starter 2', course: 'Starter', price: 'R110' },
-    { id: '5', name: 'Main 2', description: 'Hearty Main Course 2', course: 'Main', price: 'R250' },
-    { id: '6', name: 'Dessert 2', description: 'Sweet Dessert 2', course: 'Dessert', price: 'R90' },
-    { id: '7', name: 'Starter 3', description: 'Delicious Starter 3', course: 'Starter', price: 'R120' },
-    { id: '8', name: 'Main 3', description: 'Hearty Main Course 3', course: 'Main', price: 'R300' },
-    { id: '9', name: 'Dessert 3', description: 'Sweet Dessert 3', course: 'Dessert', price: 'R100' },
-    { id: '10', name: 'Starter 4', description: 'Delicious Starter 4', course: 'Starter', price: 'R130' },
+    { id: '2', name: 'Starter 2', description: 'Tasty Starter 2', course: 'Starter', price: 'R120' },
+    { id: '3', name: 'Main 1', description: 'Hearty Main Course 1', course: 'Main', price: 'R200' },
+    { id: '4', name: 'Main 2', description: 'Savory Main Course 2', course: 'Main', price: 'R250' },
+    { id: '5', name: 'Dessert 1', description: 'Sweet Dessert 1', course: 'Dessert', price: 'R80' },
+    { id: '6', name: 'Dessert 2', description: 'Rich Dessert 2', course: 'Dessert', price: 'R90' },
   ];
 
   return (
@@ -168,6 +208,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#333',
     padding: 20,
+    justifyContent: 'flex-start', // Ensure layout is stackable
   },
   title: {
     fontSize: 24,
@@ -194,16 +235,22 @@ const styles = StyleSheet.create({
     padding: 10,
     color: '#fff',
     marginBottom: 10,
+    borderRadius: 5, // Added for better interaction
   },
   item: {
     padding: 15,
     backgroundColor: '#555',
     borderRadius: 5,
     marginBottom: 10,
+    zIndex: 10, 
   },
   itemText: {
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
+  },
+  button: {
+    position: 'relative', 
+    zIndex: 20, 
   },
 });

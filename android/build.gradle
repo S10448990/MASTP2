@@ -51,3 +51,6 @@ allprojects {
         maven { url 'https://www.jitpack.io' }
     }
 }
+project.ext.react = [
+    enableHermes: false  
+]
